@@ -8,9 +8,8 @@ use Yii;
  * This is the model class for table "category".
  *
  * @property int $id
- * @property string $name
- *
- * @property Hotels[] $hotels
+ * @property string $title
+ * @property string $image
  */
 class Category extends \yii\db\ActiveRecord
 {
@@ -30,8 +29,8 @@ class Category extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['name'], 'required'],
-            [['name'], 'string', 'max' => 255],
+            [['title', 'image'], 'required'],
+            [['title', 'image'], 'string', 'max' => 255],
         ];
     }
 
@@ -42,18 +41,9 @@ class Category extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'name' => 'Name',
+            'title' => 'Title',
+            'image' => 'Image',
         ];
-    }
-
-    /**
-     * Gets query for [[Hotels]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getHotels()
-    {
-        return $this->hasMany(Hotels::class, ['category_id' => 'id']);
     }
 
 }

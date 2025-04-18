@@ -2,6 +2,7 @@
 
 namespace frontend\modules\api\controllers;
 
+use common\models\Category;
 use common\models\Hotels;
 use common\models\User;
 use yii\rest\Controller;
@@ -15,29 +16,6 @@ class UserController extends Controller
      * Renders the index view for the module
      * @return string
      */
-
-//    public function behaviors()
-//    {
-//        return parent::behaviors() + [
-//                [
-//                    'class' => \yii\filters\ContentNegotiator::className(),
-//                    'formats' => [
-//                        'application/json' => \yii\web\Response::FORMAT_JSON,
-//                    ],
-//                ],
-//                'bearerAuth' => [
-//                    'class' => \yii\filters\auth\HttpBearerAuth::className(),
-//                    'optional' => [
-//                        'login',
-//                        'index',
-//                        'create',
-//                        'register',
-//                        'get-version-apk',
-//                        'get-hotels',
-//                    ],
-//                ],
-//            ];
-//    }
 
   public function behaviors()
   {
@@ -101,8 +79,6 @@ class UserController extends Controller
     public function actionRegister()
     {
 
-//        $data = \Yii::$app->request->post();
-
       $data = json_decode(\Yii::$app->request->getRawBody(), true);
       if(!\Yii::$app->request->isPost){
             return [
@@ -111,9 +87,9 @@ class UserController extends Controller
             ];
         }
 
-        if (empty($data['username']) || empty($data['password']) || empty($data['email'])) {
+        if (empty($data['username']) || empty($data['password']) || empty($data['email']) || empty($data['phone_number'])) {
             \Yii::$app->response->statusCode = 400;
-            return ['error' => 'Username, password va email to‘ldirilishi kerak.'];
+            return ['error' => 'Tepadagi barcha formalar to‘ldirilishi kerak.'];
         }
 
         // Agar bunday username allaqachon mavjud bo‘lsa
@@ -127,7 +103,8 @@ class UserController extends Controller
         $user->password = $data['password'];
         $user->password_hash = \Yii::$app->security->generatePasswordHash($data['password']);
         $user->email = $data['email'];
-        $user->auth_key = \Yii::$app->security->generateRandomString(32);
+        $user->phone_number = $data['phone_number'];
+//        $user->auth_key = \Yii::$app->security->generateRandomString(32);
         $user->password_reset_token = \Yii::$app->security->generateRandomString();
         $user->created_at = time();
         $user->updated_at = time();
@@ -195,51 +172,6 @@ class UserController extends Controller
         }
     }
 
-
-    public function actionGetHotels()
-    {
-        date_default_timezone_set('Asia/Tashkent');
-
-        if(!\Yii::$app->request->isGet){
-            return [
-                'status' => 'error',
-                'message' => 'Method not allowed'
-            ];
-        }
-
-//        $auth_key = \Yii::$app->request->post('auth_key');
-//        if(!$auth_key){
-//            return [
-//                'status' => 'error',
-//                'message' => 'Token is required',
-//            ];
-//        }
-//
-//        $user = User::findOne(['auth_key' => $auth_key]);
-//
-//        if (!$user){
-//            return [
-//                'status' => 'error',
-//                'message' => 'You have not ability to get information ',
-//            ];
-//        }
-//
-//        $date = date("Y-m-d H:i:s");
-//
-//        if($user->session_expired_time < $date){
-//            return [
-//              'status' => 'error',
-//              'message' => 'The session period has ended',
-//            ];
-//        }
-
-        $hotels = Hotels::find()->all();
-        return [
-            'status' => 'success',
-            'message' => 'Data fetched successfully',
-            'hotels' => $hotels,
-        ];
-    }
 
 }
 
