@@ -18,29 +18,55 @@ class HotelsController extends Controller
      * @return string
      */
 
-    public function behaviors()
-    {
-        return parent::behaviors() + [
-                [
-                    'class' => \yii\filters\ContentNegotiator::className(),
-                    'formats' => [
-                        'application/json' => \yii\web\Response::FORMAT_JSON,
-                    ],
-                ],
-                'bearerAuth' => [
-                    'class' => \yii\filters\auth\HttpBearerAuth::className(),
-                    'optional' => [
-                        'login',
-                        'index',
-                        'create',
-                        'register',
-                        'get-version-apk',
-                        'get-hotels',
-                        'get-categories',
-                    ],
-                ],
-            ];
-    }
+     public function behaviors()
+     {
+       $behaviors = parent::behaviors();
+   
+       // JSON formatlash
+       $behaviors['contentNegotiator'] = [
+         'class' => \yii\filters\ContentNegotiator::className(),
+         'formats' => [
+           'application/json' => \yii\web\Response::FORMAT_JSON,
+         ],
+       ];
+   
+       // CORS filter
+       $behaviors['corsFilter'] = [
+         'class' => \yii\filters\Cors::class,
+         'cors' => [
+           'Origin' => ['http://localhost:3000'], // xavfsizroq variant
+           'Access-Control-Request-Method' => ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+           'Access-Control-Allow-Credentials' => true,
+           'Access-Control-Allow-Headers' => [
+             'Content-Type',
+             'Authorization',
+             'X-Requested-With',
+             'Accept',
+             'Origin'
+           ],
+           'Access-Control-Expose-Headers' => [
+             'Content-Type',
+             'Authorization'
+           ],
+           'Access-Control-Max-Age' => 3600,
+         ],
+       ];
+   
+       // Bearer Auth
+       $behaviors['authenticator'] = [
+         'class' => \yii\filters\auth\HttpBearerAuth::className(),
+         'optional' => [
+           'login',
+           'index',
+           'create',
+           'register',
+           'get-version-apk',
+           'get-hotels',
+         ],
+       ];
+   
+       return $behaviors;
+     }
 
     public function beforeAction($action)
     {
