@@ -87,12 +87,18 @@ class HotelsController extends Controller
 //        }
 
         $hotels = Hotels::find()->all();
-        $images_sql  = Images::find()->all();
-        return $images_sql;
+        $results = [];
+
+        foreach ($hotels as $hotel) {
+            $hotelArray = $hotel->toArray();
+            $hotelArray['images'] = Images::find()->where(['hotel_id' => $hotel->id])->all();
+            $results[] = $hotelArray;
+        }
+
         return [
             'status' => 'success',
             'message' => 'Data fetched successfully',
-            'hotels' => $hotels,
+            'hotels' => $results,
         ];
 //        var_dump($hotels);
 
