@@ -5,7 +5,7 @@ use yii\db\Migration;
 /**
  * Handles the creation of table `{{%wishlists}}`.
  */
-class m250410_112059_create_wishlists_table extends Migration
+class m250414_143525_create_wishlists_table extends Migration
 {
     /**
      * {@inheritdoc}
