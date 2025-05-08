@@ -62,6 +62,8 @@ class HotelsController extends Controller
            'register',
            'get-version-apk',
            'get-hotels',
+           'create-hotels',
+           'delete-hotels',
          ],
        ];
    
@@ -150,5 +152,92 @@ class HotelsController extends Controller
         ];
     }
 
+    public function actionCreateHotels()
+    {
+        $data = json_decode(\Yii::$app->request->getRawBody(), true);
+        if(!\Yii::$app->request->isPost){
+            return [
+                'status' => 'error',
+                'message' => 'Method not allowed'
+            ];
+        }
+
+//        if (empty($data['username']) || empty($data['password']) || empty($data['email']) || empty($data['phone_number'])) {
+//            \Yii::$app->response->statusCode = 400;
+//            return ['error' => 'Tepadagi barcha formalar to‘ldirilishi kerak.'];
+//        }
+
+
+        $hotel = new Hotels();
+        $hotel->name = $data['name'];
+        $hotel->price = $data['price'];
+        $hotel->description = $data['description'];
+        $hotel->bathrooms = $data['bathrooms'];
+        $hotel->bedrooms = $data['bedrooms'];
+        $hotel->beds = $data['beds'];
+        $hotel->city = $data['city'];
+        $hotel->persons = $data['persons'];
+        $hotel->rating = $data['rating'];
+        $hotel->address = $data['address'];
+        $hotel->owner_id = $data['owner_id'];
+        $hotel->category_id = $data['category_id'];
+        $hotel->status = 1;
+        $hotel->created_ta = time();
+        $hotel->updated_at = time();
+
+        if ($hotel->save(false)) {
+            return [
+                'status' => 'success',
+                'message' => 'Add new thing successful',
+                'hotel' => $hotel,
+            ];
+        } else {
+            \Yii::$app->response->statusCode = 500;
+            return ['error' => 'Server xatosi: hotel qoshilmadi'];
+        }
+    }
+
+    public function actionDeleteHotels()
+    {
+        $data = json_decode(\Yii::$app->request->getRawBody(), true);
+
+        if (!\Yii::$app->request->isDelete) {
+            return [
+                'status' => 'error',
+                'message' => 'Method not allowed'
+            ];
+        }
+
+        if (empty($data['hotel_id'])) {
+            return [
+                'status' => 'error',
+                'message' => 'hotel_id is required'
+            ];
+        }
+
+        $hotel = Hotels::findOne($data['hotel_id']);
+        if (!$hotel) {
+            return [
+                'status' => 'error',
+                'message' => 'Hotel not found'
+            ];
+        }
+
+        // Avval bog'liq rasm yozuvlarini o‘chir
+        \common\models\Images::deleteAll(['hotel_id' => $hotel->id]);
+
+        if ($hotel->delete()) {
+            return [
+                'status' => 'success',
+                'message' => 'Hotel deleted successfully'
+            ];
+        } else {
+            \Yii::$app->response->statusCode = 500;
+            return [
+                'status' => 'error',
+                'message' => 'Could not delete hotel'
+            ];
+        }
+    }
 }
 

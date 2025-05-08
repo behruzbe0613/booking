@@ -104,12 +104,25 @@ class UserController extends Controller
         $user->password_hash = \Yii::$app->security->generatePasswordHash($data['password']);
         $user->email = $data['email'];
         $user->phone_number = $data['phone_number'];
-//        $user->auth_key = \Yii::$app->security->generateRandomString(32);
         $user->password_reset_token = \Yii::$app->security->generateRandomString();
         $user->created_at = time();
         $user->updated_at = time();
+        $user->email_verification_token = \Yii::$app->security->generateRandomString() . '_' . time();
+        $user->is_email_verified = false;
 
         if ($user->save(false)) {
+            $verifyLink = \Yii::$app->urlManager->createAbsoluteUrl([
+                'site/verify-email',
+                'token' => $user->email_verification_token,
+            ]);
+
+            \Yii::$app->mailer->compose()
+                ->setTo($user->email)
+                ->setFrom([\Yii::$app->params['adminEmail'] => 'Upen Community'])
+                ->setSubject('Email Verification')
+                ->setTextBody("Please click the link below to verify your email:\n\n$verifyLink")
+                ->send();
+
             return [
                 'status' => 'success',
                 'message' => 'Register successful',
@@ -119,9 +132,62 @@ class UserController extends Controller
             \Yii::$app->response->statusCode = 500;
             return ['error' => 'Server xatosi: foydalanuvchi saqlanmadi'];
         }
-
-
     }
+
+    public function actionVerifyEmail($token)
+    {
+        $user = User::find()->where(['email_verification_token' => $token])->one();
+
+        if (!$user) {
+            return ['error' => 'Noto‘g‘ri yoki eskirgan token'];
+        }
+
+        $expireTime = 60; // 24 hours
+        $tokenTime = explode('_', $user->email_verification_token)[1] ?? 0;
+
+        if (time() - (int)$tokenTime > $expireTime) {
+            return ['error' => 'Tasdiqlash linki eskirgan. Qayta yuborishni so‘rang.'];
+        }
+
+        $user->is_email_verified = true;
+        $user->email_verification_token = null;
+        $user->save(false);
+
+        return ['message' => 'Email muvaffaqiyatli tasdiqlandi.'];
+    }
+
+
+    public function actionResendVerification()
+    {
+        $data = json_decode(\Yii::$app->request->getRawBody(), true);
+        $user = User::find()->where(['email' => $data['email']])->one();
+
+        if (!$user) {
+            return ['error' => 'Foydalanuvchi topilmadi.'];
+        }
+
+        if ($user->is_email_verified) {
+            return ['message' => 'Email allaqachon tasdiqlangan.'];
+        }
+
+        $user->email_verification_token = \Yii::$app->security->generateRandomString() . '_' . time();
+        $user->save(false);
+
+        $verifyLink = \Yii::$app->urlManager->createAbsoluteUrl([
+            'site/verify-email',
+            'token' => $user->email_verification_token,
+        ]);
+
+        \Yii::$app->mailer->compose()
+            ->setTo($user->email)
+            ->setFrom([\Yii::$app->params['supportEmail'] => 'YourApp Name'])
+            ->setSubject('Qayta tasdiqlash')
+            ->setTextBody("Yangi tasdiqlash linki:\n\n$verifyLink")
+            ->send();
+
+        return ['message' => 'Yangi tasdiqlash linki yuborildi.'];
+    }
+
 
 
     public function actionLogin()
