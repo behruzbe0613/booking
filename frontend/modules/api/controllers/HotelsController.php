@@ -62,6 +62,7 @@ class HotelsController extends Controller
            'register',
            'get-version-apk',
            'get-hotels',
+           'get-categories'
          ],
        ];
    
