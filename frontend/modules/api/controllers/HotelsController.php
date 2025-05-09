@@ -6,6 +6,7 @@ use common\models\Category;
 use common\models\Hotels;
 use common\models\Images;
 use common\models\User;
+use common\models\Wishlists;
 use yii\rest\Controller;
 
 /**
@@ -65,6 +66,9 @@ class HotelsController extends Controller
            'get-categories',
            'create-hotels',
            'delete-hotels',
+           'add-wishlist',
+           'delete-wishlist',
+           'get-wishlist',
          ],
        ];
    
@@ -163,12 +167,6 @@ class HotelsController extends Controller
             ];
         }
 
-//        if (empty($data['username']) || empty($data['password']) || empty($data['email']) || empty($data['phone_number'])) {
-//            \Yii::$app->response->statusCode = 400;
-//            return ['error' => 'Tepadagi barcha formalar to‘ldirilishi kerak.'];
-//        }
-
-
         $hotel = new Hotels();
         $hotel->name = $data['name'];
         $hotel->price = $data['price'];
@@ -187,9 +185,20 @@ class HotelsController extends Controller
         $hotel->updated_at = time();
 
         if ($hotel->save(false)) {
+
+            // 🔽 Rasmlarni yozish
+            if (!empty($data['images']) && is_array($data['images'])) {
+                foreach ($data['images'] as $imageUrl) {
+                    $image = new \common\models\Images();
+                    $image->hotel_id = $hotel->id;
+                    $image->url = $imageUrl; // Yoki $image->image_url agar sizda shunday nom bo‘lsa
+                    $image->save(false);
+                }
+            }
+
             return [
                 'status' => 'success',
-                'message' => 'Add new thing successful',
+                'message' => 'Add new hotel successful',
                 'hotel' => $hotel,
             ];
         } else {
@@ -197,6 +206,7 @@ class HotelsController extends Controller
             return ['error' => 'Server xatosi: hotel qoshilmadi'];
         }
     }
+
 
     public function actionDeleteHotels()
     {
@@ -240,5 +250,120 @@ class HotelsController extends Controller
             ];
         }
     }
+
+    public function actionAddWishlist()
+    {
+        $data = json_decode(\Yii::$app->request->getRawBody(), true);
+        if(!\Yii::$app->request->isPost){
+            return [
+                'status' => 'error',
+                'message' => 'Method not allowed'
+            ];
+        }
+
+        $wishlist_hotels = new Wishlists();
+        $wishlist_hotels->user_id = $data['user_id'];
+        $wishlist_hotels->hotel_id = $data['hotel_id'];
+
+        if($wishlist_hotels->save(false)){
+            return [
+                'status' => 'success',
+                'message' => 'Add wishlist successful',
+                'hotel' => $wishlist_hotels,
+            ];
+        }
+    }
+
+    public function actionDeleteWishlist()
+    {
+        $data = json_decode(\Yii::$app->request->getRawBody(), true);
+
+        if (!\Yii::$app->request->isDelete) {
+            return [
+                'status' => 'error',
+                'message' => 'Method not allowed'
+            ];
+        }
+
+        if (empty($data['user_id']) || empty($data['hotel_id'])) {
+            return [
+                'status' => 'error',
+                'message' => 'user_id and hotel_id are required'
+            ];
+        }
+
+        $wishlist = \common\models\Wishlists::find()
+            ->where(['user_id' => $data['user_id'], 'hotel_id' => $data['hotel_id']])
+            ->one();
+
+        if (!$wishlist) {
+            return [
+                'status' => 'error',
+                'message' => 'Wishlist item not found'
+            ];
+        }
+
+        if ($wishlist->delete()) {
+            return [
+                'status' => 'success',
+                'message' => 'Wishlist item deleted successfully'
+            ];
+        } else {
+            \Yii::$app->response->statusCode = 500;
+            return [
+                'status' => 'error',
+                'message' => 'Could not delete wishlist item'
+            ];
+        }
+    }
+
+    public function actionGetWishlist()
+    {
+        $data = \Yii::$app->request->get();
+
+        if (empty($data['user_id'])) {
+            return [
+                'status' => 'error',
+                'message' => 'user_id is required'
+            ];
+        }
+
+        $user_id = $data['user_id'];
+
+        $wishlistItems = \common\models\Wishlists::find()
+            ->where(['user_id' => $user_id])
+            ->all();
+
+        if (empty($wishlistItems)) {
+            return [
+                'status' => 'success',
+                'message' => 'Wishlist is empty',
+                'hotels' => []
+            ];
+        }
+
+        $hotels = [];
+        foreach ($wishlistItems as $item) {
+            $hotel = \common\models\Hotels::findOne($item->hotel_id);
+            if ($hotel) {
+                $hotelData = $hotel->toArray();
+
+                // Agar hotelga rasm kerak bo‘lsa, shu yerda olib qo‘shamiz:
+                $hotelData['images'] = \common\models\Images::find()
+                    ->where(['hotel_id' => $hotel->id])
+                    ->all();
+
+                $hotels[] = $hotelData;
+            }
+        }
+
+        return [
+            'status' => 'success',
+            'message' => 'Wishlist hotels fetched successfully',
+            'hotels' => $hotels,
+        ];
+    }
+
+
 }
 
