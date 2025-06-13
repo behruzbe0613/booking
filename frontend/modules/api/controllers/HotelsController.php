@@ -87,11 +87,35 @@ class HotelsController extends Controller
         date_default_timezone_set('Asia/Tashkent');
 
         if(!\Yii::$app->request->isGet){
+          \Yii::$app->response->statusCode = 400;
             return [
                 'status' => 'error',
-                'message' => 'Method not allowed'
+                'error' => 'Method not allowed'
             ];
         }
+
+      $hotelId = \Yii::$app->request->get('id'); // GET so‘rovdan id ni olish
+
+      if ($hotelId) {
+        $hotel = Hotels::findOne($hotelId);
+
+        if (!$hotel) {
+          \Yii::$app->response->statusCode = 404;
+          return [
+            'status' => 'error',
+            'error' => 'Hotel not found'
+          ];
+        }
+
+        $hotelArray = $hotel->toArray();
+        $hotelArray['images'] = Images::find()->where(['hotel_id' => $hotel->id])->all();
+
+        return [
+          'status' => 'success',
+          'message' => 'Hotel fetched successfully',
+          'hotel' => $hotelArray,
+        ];
+      }
 
 //        $auth_key = \Yii::$app->request->post('auth_key');
 //        if(!$auth_key){
@@ -142,9 +166,10 @@ class HotelsController extends Controller
         date_default_timezone_set('Asia/Tashkent');
 
         if(!\Yii::$app->request->isGet){
+          \Yii::$app->response->statusCode = 400;
             return [
                 'status' => 'error',
-                'message' => 'Method not allowed'
+                'error' => 'Method not allowed'
             ];
         }
 
@@ -161,9 +186,10 @@ class HotelsController extends Controller
     {
         $data = json_decode(\Yii::$app->request->getRawBody(), true);
         if(!\Yii::$app->request->isPost){
+          \Yii::$app->response->statusCode = 400;
             return [
                 'status' => 'error',
-                'message' => 'Method not allowed'
+                'error' => 'Method not allowed'
             ];
         }
 
@@ -213,24 +239,27 @@ class HotelsController extends Controller
         $data = json_decode(\Yii::$app->request->getRawBody(), true);
 
         if (!\Yii::$app->request->isDelete) {
+          \Yii::$app->response->statusCode = 400;
             return [
                 'status' => 'error',
-                'message' => 'Method not allowed'
+                'error' => 'Method not allowed'
             ];
         }
 
         if (empty($data['hotel_id'])) {
+          \Yii::$app->response->statusCode = 400;
             return [
                 'status' => 'error',
-                'message' => 'hotel_id is required'
+                'error' => 'hotel_id is required'
             ];
         }
 
         $hotel = Hotels::findOne($data['hotel_id']);
         if (!$hotel) {
+          \Yii::$app->response->statusCode = 400;
             return [
                 'status' => 'error',
-                'message' => 'Hotel not found'
+                'error' => 'Hotel not found'
             ];
         }
 
@@ -246,7 +275,7 @@ class HotelsController extends Controller
             \Yii::$app->response->statusCode = 500;
             return [
                 'status' => 'error',
-                'message' => 'Could not delete hotel'
+                'error' => 'Could not delete hotel'
             ];
         }
     }
@@ -255,9 +284,10 @@ class HotelsController extends Controller
     {
         $data = json_decode(\Yii::$app->request->getRawBody(), true);
         if(!\Yii::$app->request->isPost){
+          \Yii::$app->response->statusCode = 400;
             return [
                 'status' => 'error',
-                'message' => 'Method not allowed'
+                'error' => 'Method not allowed'
             ];
         }
 
@@ -279,16 +309,18 @@ class HotelsController extends Controller
         $data = json_decode(\Yii::$app->request->getRawBody(), true);
 
         if (!\Yii::$app->request->isDelete) {
+          \Yii::$app->response->statusCode = 400;
             return [
                 'status' => 'error',
-                'message' => 'Method not allowed'
+                'error' => 'Method not allowed'
             ];
         }
 
         if (empty($data['user_id']) || empty($data['hotel_id'])) {
+          \Yii::$app->response->statusCode = 400;
             return [
                 'status' => 'error',
-                'message' => 'user_id and hotel_id are required'
+                'error' => 'user_id and hotel_id are required'
             ];
         }
 
@@ -297,9 +329,10 @@ class HotelsController extends Controller
             ->one();
 
         if (!$wishlist) {
+          \Yii::$app->response->statusCode = 400;
             return [
                 'status' => 'error',
-                'message' => 'Wishlist item not found'
+                'error' => 'Wishlist item not found'
             ];
         }
 
@@ -312,7 +345,7 @@ class HotelsController extends Controller
             \Yii::$app->response->statusCode = 500;
             return [
                 'status' => 'error',
-                'message' => 'Could not delete wishlist item'
+                'error' => 'Could not delete wishlist item'
             ];
         }
     }
@@ -322,6 +355,7 @@ class HotelsController extends Controller
         $data = \Yii::$app->request->get();
 
         if (empty($data['user_id'])) {
+          \Yii::$app->response->statusCode = 400;
             return [
                 'status' => 'error',
                 'message' => 'user_id is required'
