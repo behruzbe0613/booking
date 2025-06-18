@@ -68,6 +68,8 @@ class HotelsController extends Controller
            'add-wishlist',
            'delete-wishlist',
            'get-wishlist',
+           'get-own-hotels',
+           'search-hotels'
          ],
        ];
    
@@ -135,6 +137,80 @@ class HotelsController extends Controller
 //        var_dump($hotels);
 
     }
+
+    public function actionGetOwnHotels()
+    {
+        date_default_timezone_set('Asia/Tashkent');
+
+        if (!\Yii::$app->request->isGet) {
+            return [
+                'status' => 'error',
+                'message' => 'Method not allowed'
+            ];
+        }
+
+        $user_id = \Yii::$app->request->get('user_id');
+
+        if (!$user_id) {
+            return [
+                'status' => 'error',
+                'message' => 'user_id is required'
+            ];
+        }
+
+        $hotels = Hotels::find()->where(['owner_id' => $user_id])->all();
+        $results = [];
+
+        foreach ($hotels as $hotel) {
+            $hotelArray = $hotel->toArray();
+            $hotelArray['images'] = Images::find()->where(['hotel_id' => $hotel->id])->all();
+            $results[] = $hotelArray;
+        }
+
+        return [
+            'status' => 'success',
+            'message' => 'User\'s hotels fetched successfully',
+            'hotels' => $results,
+        ];
+    }
+
+    public function actionSearchHotels($query = '')
+    {
+        date_default_timezone_set('Asia/Tashkent');
+
+        if (!\Yii::$app->request->isGet) {
+            return [
+                'status' => 'error',
+                'message' => 'Method not allowed',
+            ];
+        }
+
+        if (empty($query)) {
+            return [
+                'status' => 'error',
+                'message' => 'Search query is required.',
+            ];
+        }
+
+        $hotels = Hotels::find()
+            ->where(['like', 'name', $query])
+            ->all();
+
+        $results = [];
+
+        foreach ($hotels as $hotel) {
+            $hotelArray = $hotel->toArray();
+            $hotelArray['images'] = Images::find()->where(['hotel_id' => $hotel->id])->all();
+            $results[] = $hotelArray;
+        }
+
+        return [
+            'status' => 'success',
+            'message' => 'Search results fetched successfully',
+            'hotels' => $results,
+        ];
+    }
+
 
     public function actionGetCategories()
     {
