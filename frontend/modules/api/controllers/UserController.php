@@ -5,6 +5,7 @@ namespace frontend\modules\api\controllers;
 use common\models\Category;
 use common\models\Hotels;
 use common\models\User;
+use yii\swiftmailer\Mailer;
 use yii\rest\Controller;
 
 /**
@@ -61,6 +62,7 @@ class UserController extends Controller
         'register',
         'get-version-apk',
         'get-hotels',
+        'verify'
       ],
     ];
 
@@ -104,24 +106,21 @@ class UserController extends Controller
         $user->password_hash = \Yii::$app->security->generatePasswordHash($data['password']);
         $user->email = $data['email'];
         $user->phone_number = $data['phone_number'];
+        $user->verification_token = \Yii::$app->security->generateRandomString(32);
         $user->password_reset_token = \Yii::$app->security->generateRandomString();
         $user->created_at = time();
         $user->updated_at = time();
-        $user->email_verification_token = \Yii::$app->security->generateRandomString() . '_' . time();
-        $user->is_email_verified = false;
+        $user->status = 9;
 
         if ($user->save(false)) {
-            $verifyLink = \Yii::$app->urlManager->createAbsoluteUrl([
-                'site/verify-email',
-                'token' => $user->email_verification_token,
-            ]);
-
-            \Yii::$app->mailer->compose()
-                ->setTo($user->email)
-                ->setFrom([\Yii::$app->params['adminEmail'] => 'Upen Community'])
-                ->setSubject('Email Verification')
-                ->setTextBody("Please click the link below to verify your email:\n\n$verifyLink")
-                ->send();
+          // Email yuborish
+          \Yii::$app->mailer->compose('verify', ['username' => $user->username,'key'=>$user->verification_token]) // shablon bilan
+//          \Yii::$app->mailer->compose()
+          ->setFrom(['nurmuhammad.dev13@gmail.com' => 'Admin'])
+            ->setTo($user->email)
+            ->setSubject('Ro‘yxatdan o‘tganingiz uchun tashakkur')
+//            ->setTextBody("Salom {$user->username}, tizimga ro‘yxatdan o‘tdingiz!")
+            ->send();
 
             return [
                 'status' => 'success',
@@ -195,28 +194,37 @@ class UserController extends Controller
         date_default_timezone_set('Asia/Tashkent');
 
         if(!\Yii::$app->request->isPost){
+          \Yii::$app->response->statusCode = 400;
             return [
                 'status' => 'error',
-                'message' => 'Method not allowed'
+                'error' => 'Method not allowed'
+            ];
+        }
+      $data = json_decode(\Yii::$app->request->getRawBody(), true);
+
+        if(empty($data['username']) || empty($data['password'])){
+          \Yii::$app->response->statusCode = 400;
+            return [
+                'status' => 'empty',
+                'error' => 'Login yoki parol kiritilmagan'
             ];
         }
 
-        $username = \Yii::$app->request->post('username');
-        $password = \Yii::$app->request->post('password');
-
-        if(!$username || !$password){
+        $user = User::findOne(['username' => $data['username']]);
+        if(!$user || !$user->validatePassword($data['password'])) {
+          \Yii::$app->response->statusCode = 400;
             return [
-                'status' => 'error',
-                'message' => 'Login yoki parol kiritilmagan'
+                'status' => 'notfound',
+                'error' => 'Login yoki parol xato'
             ];
         }
 
-        $user = User::findOne(['username' => $username]);
-        if(!$user || !$user->validatePassword($password)) {
-            return [
-                'status' => 'error',
-                'message' => 'Login yoki parol xato'
-            ];
+        if($user->status != 10){
+          \Yii::$app->response->statusCode = 400;
+          return [
+            'status' => 'unverifyed',
+            'error' => 'Email tasdiqlanmagan'
+          ];
         }
 
         $user->login_time = date("Y-m-d H:i:s");
@@ -230,14 +238,61 @@ class UserController extends Controller
                 'user_profile' => $user,
             ];
         } else {
+          \Yii::$app->response->statusCode = 400;
             return [
                 'status' => 'error',
-                'message' => 'Login failed',
+                'error' => 'Login failed',
                 'user_profile' => $user->errors,
             ];
         }
     }
 
+  public function actionVerify()
+  {
+    date_default_timezone_set('Asia/Tashkent');
+
+    if(!\Yii::$app->request->isPost){
+      \Yii::$app->response->statusCode = 400;
+      return [
+        'status' => 'error',
+        'error' => 'Method not allowed'
+      ];
+    }
+
+    $verification_token = json_decode(\Yii::$app->request->getRawBody(), true);
+
+    if(!$verification_token){
+      return [
+        'status' => 'error',
+        'message' => 'Auth key kiritilmagan'
+      ];
+    }
+    \Yii::error('Token: ' . $verification_token['verification_token'], 'verify');
+    $user = User::findOne(['verification_token' => $verification_token['verification_token']]);
+    if(!$user) {
+      \Yii::$app->response->statusCode = 400;
+      return [
+        'status' => 'error',
+        'error' => 'User topilmadi.'
+      ];
+    }
+
+    $user->status = 10;
+
+    if($user->save(false)) {
+      return [
+        'status' => 'success',
+        'message' => 'Email tastiqlandi'
+      ];
+    } else {
+      \Yii::$app->response->statusCode = 400;
+      return [
+        'status' => 'error',
+        'error' => 'Email tastiqlanmadi',
+        'user_profile' => $user->errors
+      ];
+    }
+  }
 
 }
 
