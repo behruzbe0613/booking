@@ -5,6 +5,7 @@ namespace frontend\modules\api\controllers;
 use common\models\Category;
 use common\models\Hotels;
 use common\models\Images;
+use common\models\Trips;
 use common\models\User;
 use common\models\Wishlists;
 use yii\rest\Controller;
@@ -70,7 +71,8 @@ class HotelsController extends Controller
            'delete-wishlist',
            'get-wishlist',
            'get-own-hotels',
-           'search-hotels'
+           'search-hotels',
+           'book-hotels'
          ],
        ];
    
@@ -309,6 +311,37 @@ class HotelsController extends Controller
         }
     }
 
+    public function actionBookHotels()
+    {
+        $data = json_decode(\Yii::$app->request->getRawBody(), true);
+        if(!\Yii::$app->request->isPost){
+            \Yii::$app->response->statusCode = 400;
+            return [
+                'status' => 'error',
+                'error' => 'Method not allowed'
+            ];
+        }
+
+        $booked_hotel = new Trips();
+        $booked_hotel->user_id = $data['user_id'];
+        $booked_hotel->hotel_id = $data['hotel_id'];
+        $booked_hotel->started_at = $data['started_at'];
+        $booked_hotel->ended_at = $data['ended_at'];
+
+        $now = date('Y-m-d');
+        $booked_hotel->active = ($booked_hotel->ended_at > $now) ? 1 : 0;
+
+        if ($booked_hotel->save(false)) {
+            return [
+                'status' => 'success',
+                'message' => 'Add new hotel successful',
+                'hotel' => $booked_hotel,
+            ];
+        } else {
+            \Yii::$app->response->statusCode = 500;
+            return ['error' => 'Server xatosi: hotel qoshilmadi'];
+        }
+    }
 
     public function actionDeleteHotels()
     {
