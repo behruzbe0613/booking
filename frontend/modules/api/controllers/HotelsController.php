@@ -9,6 +9,8 @@ use common\models\Trips;
 use common\models\User;
 use common\models\Wishlists;
 use yii\rest\Controller;
+use yii\web\UploadedFile;
+use Yii;
 
 /**
  * Default controller for the `api` module
@@ -318,53 +320,69 @@ class HotelsController extends Controller
 
     public function actionCreateHotels()
     {
-        $data = json_decode(\Yii::$app->request->getRawBody(), true);
-        if(!\Yii::$app->request->isPost){
-          \Yii::$app->response->statusCode = 400;
-            return [
-                'status' => 'error',
-                'error' => 'Method not allowed'
-            ];
-        }
+      \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
 
-        $hotel = new Hotels();
-        $hotel->name = $data['name'];
-        $hotel->price = $data['price'];
-        $hotel->description = $data['description'];
-        $hotel->bathrooms = $data['bathrooms'];
-        $hotel->bedrooms = $data['bedrooms'];
-        $hotel->beds = $data['beds'];
-        $hotel->city = $data['city'];
-        $hotel->persons = $data['persons'];
-        $hotel->rating = $data['rating'];
-        $hotel->address = $data['address'];
-        $hotel->owner_id = $data['owner_id'];
-        $hotel->category_id = $data['category_id'];
-        $hotel->status = 1;
-        $hotel->created_ta = time();
-        $hotel->updated_at = time();
+//      $data = json_decode(\Yii::$app->request->getRawBody(), true);
+      if(!\Yii::$app->request->isPost){
+        \Yii::$app->response->statusCode = 400;
+        return [
+          'status' => 'error',
+          'error' => 'Method not allowed'
+        ];
+      }
+      $data = \Yii::$app->request->post();
+      $hotel = new Hotels();
+      $hotel->name = $data['name'];
+      $hotel->price = $data['price'];
+      $hotel->description = $data['description'];
+      $hotel->bathrooms = $data['bathrooms'];
+      $hotel->bedrooms = $data['bedrooms'];
+      $hotel->beds = $data['beds'];
+      $hotel->city = $data['city'];
+      $hotel->persons = $data['persons'];
+      $hotel->rating = $data['rating'];
+      $hotel->address = $data['address'];
+      $hotel->owner_id = $data['owner_id'];
+      $hotel->category_id = $data['category_id'];
+      $hotel->status = 1;
+      $hotel->created_ta = time();
+      $hotel->updated_at = time();
+      if ($hotel->save(false)) {
+        // Rasm fayllarni saqlash
+        $uploadedFiles = UploadedFile::getInstancesByName('images');
 
-        if ($hotel->save(false)) {
+        foreach ($uploadedFiles as $file) {
+//          if (!in_array($file->extension, ['jpg', 'jpeg', 'png', 'webp'])) {
+//            continue;
+//          }
 
-            // 🔽 Rasmlarni yozish
-            if (!empty($data['images']) && is_array($data['images'])) {
-                foreach ($data['images'] as $imageUrl) {
-                    $image = new \common\models\Images();
-                    $image->hotel_id = $hotel->id;
-                    $image->url = $imageUrl; // Yoki $image->image_url agar sizda shunday nom bo‘lsa
-                    $image->save(false);
-                }
+          $timestamp = date('Ymd_His');
+          $uniqueId = uniqid();
+          $fileName = $timestamp . '_' . $uniqueId . '.' . $file->extension;
+          $savePath = \Yii::getAlias('@frontend/web/images/') . $fileName;
+
+          if ($file->saveAs($savePath)) {
+            $url = 'http://booking/images/' . $fileName;
+
+            $image = new \common\models\Images();
+            $image->hotel_id = $hotel->id;
+            $image->url = $url;
+            if (!$image->save()) {
+              return ['error' => 'Rasm saqlanmadi: ' . json_encode($image->getErrors())];
             }
-
-            return [
-                'status' => 'success',
-                'message' => 'Add new hotel successful',
-                'hotel' => $hotel,
-            ];
-        } else {
-            \Yii::$app->response->statusCode = 500;
-            return ['error' => 'Server xatosi: hotel qoshilmadi'];
+          }else {
+            return ['error' => 'Fayl saqlanmadi'];
+          }
         }
+        return [
+          'status' => 'success',
+          'message' => 'Add new hotel successful',
+          'hotel' => $hotel,
+        ];
+      } else {
+        \Yii::$app->response->statusCode = 500;
+        return ['error' => 'Server xatosi: hotel qoshilmadi'];
+      }
     }
 
     public function actionBookHotels()
