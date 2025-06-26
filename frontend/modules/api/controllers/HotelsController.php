@@ -72,7 +72,8 @@ class HotelsController extends Controller
            'get-wishlist',
            'get-own-hotels',
            'search-hotels',
-           'book-hotels'
+           'book-hotels',
+             'get-trips'
          ],
        ];
    
@@ -199,6 +200,61 @@ class HotelsController extends Controller
             'message' => 'User\'s hotels fetched successfully',
             'hotels' => $results,
         ];
+    }
+
+    public function actionGetTrips()
+    {
+        date_default_timezone_set('Asia/Tashkent');
+
+        if (!\Yii::$app->request->isGet) {
+            return [
+                'status' => 'error',
+                'message' => 'Method not allowed',
+            ];
+        }
+
+        $user_id = \Yii::$app->request->get('user_id');
+
+        if (!$user_id) {
+            return [
+                'status' => 'error',
+                'message' => 'user_id is required',
+            ];
+        }
+
+        $trips = \common\models\Trips::find()
+            ->where(['user_id' => $user_id])
+            ->orderBy(['started_at' => SORT_DESC])
+            ->all();
+
+        $results = [];
+
+        foreach ($trips as $trip) {
+            $hotel = \common\models\Hotels::findOne($trip->hotel_id);
+
+            if ($hotel) {
+                $hotelArray = $hotel->toArray();
+                $hotelArray['images'] = \common\models\Images::find()
+                    ->where(['hotel_id' => $hotel->id])
+                    ->asArray()
+                    ->all();
+
+                $hotelArray['booking'] = [
+                    'started_at' => $trip->started_at,
+                    'ended_at'   => $trip->ended_at,
+                    'active'     => $trip->active,
+                ];
+
+                $results[] = $hotelArray;
+            }
+        }
+
+        return [
+            'status' => 'success',
+            'message' => 'User trips fetched successfully',
+            'hotels' => $results,
+        ];
+
     }
 
     public function actionSearchHotels($query = '')
