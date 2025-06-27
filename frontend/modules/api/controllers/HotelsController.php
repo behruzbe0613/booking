@@ -74,7 +74,8 @@ class HotelsController extends Controller
            'get-wishlist',
            'get-own-hotels',
            'search-hotels',
-           'book-hotels'
+           'book-hotels',
+           'get-booked-hotels',
          ],
        ];
    
@@ -261,6 +262,28 @@ class HotelsController extends Controller
             'hotels' => $categories,
         ];
     }
+
+
+  public function actionGetBookedHotels()
+  {
+    date_default_timezone_set('Asia/Tashkent');
+
+    if(!\Yii::$app->request->isGet){
+      \Yii::$app->response->statusCode = 400;
+      return [
+        'status' => 'error',
+        'error' => 'Method not allowed'
+      ];
+    }
+
+
+    $trips = Trips::find()->all();
+    return [
+      'status' => 'success',
+      'message' => 'Data fetched successfully',
+      'trips' => $trips,
+    ];
+  }
 
     public function actionCreateHotels()
     {
