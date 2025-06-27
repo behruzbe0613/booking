@@ -62,7 +62,8 @@ class UserController extends Controller
         'register',
         'get-version-apk',
         'get-hotels',
-        'verify'
+        'verify',
+        'get-user',
       ],
     ];
 
@@ -155,7 +156,6 @@ class UserController extends Controller
         return ['message' => 'Email muvaffaqiyatli tasdiqlandi.'];
     }
 
-
     public function actionResendVerification()
     {
         $data = json_decode(\Yii::$app->request->getRawBody(), true);
@@ -186,8 +186,6 @@ class UserController extends Controller
 
         return ['message' => 'Yangi tasdiqlash linki yuborildi.'];
     }
-
-
 
     public function actionLogin()
     {
@@ -247,7 +245,7 @@ class UserController extends Controller
         }
     }
 
-  public function actionVerify()
+    public function actionVerify()
   {
     date_default_timezone_set('Asia/Tashkent');
 
@@ -293,6 +291,52 @@ class UserController extends Controller
       ];
     }
   }
+
+    public function actionGetUser()
+    {
+        date_default_timezone_set('Asia/Tashkent');
+
+        if (!\Yii::$app->request->isGet) {
+            return [
+                'status' => 'error',
+                'message' => 'Method not allowed',
+            ];
+        }
+
+        $user_id = \Yii::$app->request->get('user_id');
+
+        if (!$user_id) {
+            return [
+                'status' => 'error',
+                'message' => 'user_id is required',
+            ];
+        }
+
+        $user = \common\models\User::findOne($user_id);
+
+        if (!$user) {
+            return [
+                'status' => 'error',
+                'message' => 'User not found',
+            ];
+        }
+
+        return [
+            'status' => 'success',
+            'profile' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'email' => $user->email,
+                'phone_number' => $user->phone_number,
+                'login_time' => $user->login_time,
+                'session_expired_time' => $user->session_expired_time,
+                'status' => $user->status,
+                'created_at' => date('Y-m-d H:i:s', $user->created_at),
+            ],
+        ];
+
+
+    }
 
 }
 
