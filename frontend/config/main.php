@@ -17,14 +17,6 @@ return [
         ],
     ],
     'components' => [
-        'mailer' => [
-            'class' => \yii\symfonymailer\Mailer::class,
-            'viewPath' => '@common/mail',
-            'useFileTransport' => false, // Faqat testda true bo‘ladi
-            'transport' => [
-                'dsn' => 'smtp://USERNAME:PASSWORD@smtp.gmail.com:587',
-            ],
-        ],
         'assetManager' => [
           'basePath' => '@frontend/web',
           'baseUrl' => '/frontend/web'

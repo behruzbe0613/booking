@@ -115,13 +115,17 @@ class UserController extends Controller
 
         if ($user->save(false)) {
           // Email yuborish
-          \Yii::$app->mailer->compose('verify', ['username' => $user->username,'key'=>$user->verification_token]) // shablon bilan
-//          \Yii::$app->mailer->compose()
+          $sent = \Yii::$app->mailer->compose('verify', ['username' => $user->username,'key'=>$user->verification_token]) // shablon bilan
           ->setFrom(['nurmuhammad.dev13@gmail.com' => 'Admin'])
             ->setTo($user->email)
             ->setSubject('Ro‘yxatdan o‘tganingiz uchun tashakkur')
-//            ->setTextBody("Salom {$user->username}, tizimga ro‘yxatdan o‘tdingiz!")
             ->send();
+
+          if (!$sent) {
+            \Yii::error('Email yuborilmadi', 'register');
+          } else {
+            \Yii::error('Email yuborildi', 'register');
+          }
 
             return [
                 'status' => 'success',
